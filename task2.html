@@ -1,0 +1,1737 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TCF Task 2 Trainer · 空白版</title>
+  <style>
+    :root {
+      --bg: #f7f7f4;
+      --panel: #ffffff;
+      --ink: #252525;
+      --muted: #666b70;
+      --line: #d9ddd8;
+      --soft: #eef2ec;
+      --accent: #2f6f6d;
+      --accent-2: #b35c44;
+      --good: #2f7d46;
+      --warn: #b06a20;
+      --bad: #a94343;
+      --shadow: 0 12px 30px rgba(20, 35, 35, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    button, input, textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      border-radius: 6px;
+      min-height: 38px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: var(--accent); }
+    button.primary { background: var(--accent); color: white; border-color: var(--accent); }
+    button.danger { color: var(--bad); }
+    button.icon { width: 40px; padding: 0; display: grid; place-items: center; }
+
+    .app {
+      display: grid;
+      grid-template-columns: 360px minmax(420px, 1fr) 380px;
+      min-height: 100vh;
+    }
+
+    aside, main, .reference {
+      min-width: 0;
+    }
+
+    aside {
+      border-right: 1px solid var(--line);
+      background: #fbfbf8;
+      padding: 14px;
+      max-height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #2f6f6d, #88a875);
+      color: white;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { font-size: 18px; margin-bottom: 2px; }
+    h2 { font-size: 20px; margin-bottom: 10px; }
+    h3 { font-size: 15px; margin-bottom: 8px; }
+    .small { color: var(--muted); font-size: 12px; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .stat {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 7px 8px;
+    }
+
+    .stat strong { display: block; font-size: 18px; }
+
+    .topic-list {
+      display: grid;
+      gap: 6px;
+      overflow-y: auto;
+      padding-right: 6px;
+      min-height: 0;
+      flex: 1;
+      scrollbar-width: thin;
+    }
+
+    .topic-list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .topic-list::-webkit-scrollbar-thumb {
+      background: #b8c2bd;
+      border-radius: 999px;
+    }
+
+    .topic-list::-webkit-scrollbar-track {
+      background: #edf0ec;
+      border-radius: 999px;
+    }
+
+    .nav-controls {
+      display: grid;
+      gap: 6px;
+      margin: 8px 0 10px;
+    }
+
+    .nav-controls input,
+    .nav-controls select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      background: white;
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .topic {
+      width: 100%;
+      text-align: left;
+      display: block;
+      border-radius: 7px;
+      padding: 8px 10px 7px;
+      background: white;
+      min-height: 58px;
+      overflow: hidden;
+    }
+
+    .topic.active {
+      border-color: var(--accent);
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+
+    .topic-title {
+      display: block;
+      font-size: 14px;
+      line-height: 18px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--ink);
+    }
+
+    .topic-role,
+    .topic-meta {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .topic-role {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 15px;
+      margin-top: 1px;
+    }
+
+    .topic-meta {
+      color: var(--warn);
+      font-size: 11px;
+      line-height: 15px;
+      margin-top: 1px;
+    }
+
+    .topic .small,
+    .topic .stars {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stars {
+      color: var(--warn);
+      letter-spacing: 0;
+      font-size: 11px;
+    }
+
+    main {
+      padding: 18px 20px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+    }
+
+    .scenario {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .scenario-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 12px;
+    }
+
+    .tag-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .tag {
+      border: 1px solid var(--line);
+      background: var(--soft);
+      border-radius: 999px;
+      padding: 4px 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .topic-actions {
+      display: flex;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .topic-editor {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fcfcfa;
+    }
+
+    .topic-editor.hidden {
+      display: none;
+    }
+
+    .topic-editor-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .topic-editor label {
+      display: grid;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .topic-editor input,
+    .topic-editor textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font: inherit;
+      color: var(--ink);
+      background: white;
+    }
+
+    .topic-editor textarea {
+      min-height: 88px;
+    }
+
+    .topic-editor .full {
+      grid-column: 1 / -1;
+    }
+
+    .editor-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 760px) {
+      .topic-editor-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chat {
+      overflow: auto;
+      border: 1px solid var(--line);
+      background: #fcfcfa;
+      border-radius: 8px;
+      padding: 14px;
+      min-height: 340px;
+    }
+
+    .message {
+      max-width: 82%;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    .bot {
+      background: var(--soft);
+      border: 1px solid var(--line);
+    }
+
+    .user {
+      margin-left: auto;
+      background: #e7f0ef;
+      border: 1px solid #c4dbd8;
+    }
+
+    .composer {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    textarea {
+      min-height: 56px;
+      resize: vertical;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      padding: 10px;
+      background: white;
+      color: var(--ink);
+    }
+
+    .reference {
+      border-left: 1px solid var(--line);
+      padding: 18px;
+      background: #fbfbf8;
+      overflow: auto;
+      max-height: 100vh;
+    }
+
+    #personaText { width: 100%; min-height: 280px; font: inherit; line-height: 1.65; box-sizing: border-box; }
+    #personaSaveStatus { margin-top: 6px; }
+
+    .ref-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .ref-body.hidden .answer-text,
+    .ref-body.hidden .review-panel,
+    .ref-body.hidden .chunk-list {
+      display: none;
+    }
+
+    .ref-item {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 8px;
+    }
+
+    .ref-item.done { border-color: #9bc5a8; background: #f3faf4; }
+    .ref-item.missed { border-color: #e0b2a9; background: #fff7f5; }
+
+    .ref-label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .review-panel {
+      margin-top: 16px;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      background: white;
+      border: 1px solid var(--line);
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th { background: var(--soft); }
+
+    .meter {
+      height: 8px;
+      background: var(--soft);
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 8px 0 12px;
+    }
+
+    .meter span {
+      display: block;
+      height: 100%;
+      background: var(--good);
+      width: 0%;
+    }
+
+    .workspace-toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .practice-editor {
+      min-height: 210px;
+      max-height: 360px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 8px;
+      padding: 14px;
+      line-height: 1.55;
+      outline: none;
+      white-space: pre-wrap;
+    }
+
+    .practice-editor:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(47, 111, 109, 0.12);
+    }
+
+    .practice-editor mark,
+    .note-highlight {
+      background: #fff1a8;
+      border-radius: 3px;
+      padding: 0 2px;
+    }
+
+    .split-workspace {
+      display: grid;
+      grid-template-rows: auto minmax(180px, 1fr);
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .notes-panel,
+    .side-panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .notes-list {
+      display: grid;
+      gap: 8px;
+      max-height: 180px;
+      overflow: auto;
+    }
+
+    .note-item {
+      border: 1px solid var(--line);
+      background: #fffdf2;
+      border-radius: 8px;
+      padding: 8px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .note-item strong {
+      font-size: 13px;
+    }
+
+    .note-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+
+    .side-panel {
+      margin-bottom: 12px;
+    }
+
+    .side-panel textarea,
+    .side-panel input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px;
+      background: white;
+      color: var(--ink);
+    }
+
+    .side-panel textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .card-toolbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .question-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+
+    .question-card summary {
+      cursor: pointer;
+      padding: 10px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .question-card ul {
+      margin: 0;
+      padding: 0 12px 10px 28px;
+    }
+
+    .question-card li {
+      margin: 6px 0;
+    }
+
+    .backup-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .hidden-input {
+      display: none;
+    }
+
+    .empty {
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      color: var(--muted);
+      background: white;
+    }
+
+    @media (max-width: 1050px) {
+      .app { grid-template-columns: 300px 1fr; }
+      .reference { grid-column: 1 / -1; max-height: none; border-left: 0; border-top: 1px solid var(--line); }
+    }
+
+    @media (max-width: 760px) {
+      .app { display: block; }
+      aside, main, .reference { border: 0; }
+      .composer { grid-template-columns: 1fr; }
+      button.icon { width: 100%; }
+      .message { max-width: 100%; }
+    }
+    .selected-topic-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+    .selected-topic-filters button { padding: 5px 9px; font-size: 12px; border-radius: 16px; }
+    .selected-topic-filters .filter-chip { background: #edf3ed; color: #2f6f6d; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <div class="mark">T2</div>
+        <div>
+          <h1>TCF Task 2 Trainer</h1>
+          <div class="small">自建题库 · 我的人设 · 反复练</div>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><span class="small">题目</span><strong id="topicCount">0</strong></div>
+        <div class="stat"><span class="small">练习</span><strong id="sessionCount">0</strong></div>
+      </div>
+      <div class="toolbar">
+        <button id="addTopicBtn">Add topic</button>
+        <button id="exportVisibleBtn">导出当前列表</button>
+      </div>
+      <div class="nav-controls">
+        <input id="topicSearch" placeholder="搜索题目 / prix / logement..." />
+        <select id="topicFilter" aria-label="添加标签筛选条件"></select>
+        <div class="small">可多选，只显示同时满足所有标签的题目</div>
+        <div id="selectedTopicFilters" class="selected-topic-filters" aria-label="已选标签"></div>
+        <div id="visibleCount" class="small"></div>
+      </div>
+      <div id="topicList" class="topic-list"></div>
+    </aside>
+
+    <main>
+      <section class="scenario">
+        <div class="scenario-top">
+          <div>
+            <h2 id="topicTitle"></h2>
+            <p id="scenarioText"></p>
+            <div id="tagRow" class="tag-row"></div>
+          </div>
+          <button id="editTopicBtn" title="Edit topic and tags">Edit</button><button id="resetBtn" title="重新开始本题">↻</button>
+        </div>
+        <div id="topicEditPanel" class="topic-editor hidden">
+          <div class="topic-editor-grid">
+            <label>Title
+              <input id="editTopicTitle" autocomplete="off" />
+            </label>
+            <label>Search tags
+              <input id="editTopicTags" autocomplete="off" placeholder="logement, colocation, prix" />
+            </label>
+            <label class="full">Role
+              <input id="editTopicRole" autocomplete="off" />
+            </label>
+            <label class="full">Scenario
+              <textarea id="editTopicScenario"></textarea>
+            </label>
+          </div>
+          <div class="editor-actions">
+            <button id="saveTopicEditBtn" class="primary">Save topic</button>
+            <button id="cancelTopicEditBtn">Cancel</button>
+            <button id="resetTopicEditBtn" class="danger">Restore original</button>
+            <button id="deleteTopicBtn" class="danger">Delete topic</button>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button id="hintBtn">Hint</button>
+          <button id="nextBtn">Show next question</button>
+          <button id="finishBtn" class="primary">Finish review</button>
+          <button id="randomBtn">Random</button>
+        </div>
+      </section>
+
+      <section class="split-workspace">
+        <div>
+          <div class="workspace-toolbar">
+            <button id="highlightBtn">Highlight</button>
+            <button id="noteBtn">Add note</button>
+            <button id="insertNextBtn">Insert next question</button>
+            <button id="saveDraftBtn">Save draft</button>
+          </div>
+          <div id="practiceEditor" class="practice-editor" contenteditable="true" spellcheck="false"></div>
+        </div>
+
+        <div>
+          <h3>模拟记录</h3>
+          <section id="chat" class="chat"></section>
+          <section class="notes-panel">
+            <h3>笔记和批注</h3>
+            <div id="notesList" class="notes-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="composer">
+        <textarea id="userInput" placeholder="输入或语音转写你的法语问题。点 Send 会加入上方练习稿，并让考官回答。"></textarea>
+        <button id="micBtn" class="icon" title="语音输入">🎤</button>
+        <button id="sendBtn" class="primary">Send</button>
+        <button id="clearBtn" class="danger">Clear</button>
+      </section>
+    </main>
+
+    <section class="reference">
+      <div class="ref-head">
+        <h3><label for="personaText">我的人设</label></h3>
+      </div>
+      <textarea id="personaText" placeholder="填写你的人设，例如：身份、家庭、职业、兴趣、预算和偏好……"></textarea>
+      <div class="small" id="personaSaveStatus" role="status" aria-live="polite">所有题目共用 · 输入后自动保存</div>
+
+      <div class="side-panel">
+        <h3>我的提醒</h3>
+        <textarea id="reminderText" placeholder="写给自己的提醒，例如：先问 type / lieu，再问 prix；结尾要有下一步行动。"></textarea>
+        <div class="backup-row">
+          <button id="saveReminderBtn">Save</button>
+        </div>
+      </div>
+
+      <div class="side-panel">
+        <h3>问题卡片</h3>
+        <div class="card-toolbar">
+          <input id="cardSearch" placeholder="搜索 prix / lieu / horaires..." />
+          <button id="addCardBtn">Add</button>
+        </div>
+        <div id="questionCards"></div>
+      </div>
+
+      <div class="side-panel">
+        <h3>备份</h3>
+        <div class="small">导出会保存题库、练习稿、人设、批注、提醒和问题卡片。</div>
+        <div class="backup-row">
+          <button id="exportBtn">Export</button>
+          <button id="importBtn">Import</button>
+          <input id="importFile" class="hidden-input" type="file" accept="application/json,.json" />
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const topics = [];
+
+    const state = {
+      topicIndex: 0,
+      messages: [],
+      asked: {},
+      duplicates: {},
+      reviewDone: false,
+
+      topicSearch: "",
+      topicFilters: []
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const storeKey = "tcf-task2-share-blank-stats-v1";
+    const appKey = "tcf-task2-share-blank-data-v1";
+
+    const defaultQuestionCards = [];
+    let appData = loadAppData();
+    let saveTimer = null;
+    syncCustomTopics();
+    applyDeletedTopics();
+    const originalTopics = new Map(topics.map(topic => [topic.id, cloneTopic(topic)]));
+    applyTopicEdits();
+
+    function cloneTopic(topic) {
+      return JSON.parse(JSON.stringify(topic));
+    }
+
+    function normalize(text) {
+      return text.toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[’']/g, " ")
+        .replace(/[^\p{L}\p{N}\s]/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function getTopic() {
+      return topics[state.topicIndex];
+    }
+
+    function loadStats() {
+      try {
+        return JSON.parse(localStorage.getItem(storeKey)) || { sessions: 0, topicSessions: {} };
+      } catch {
+        return { sessions: 0, topicSessions: {} };
+      }
+    }
+
+    function saveStats(stats) {
+      localStorage.setItem(storeKey, JSON.stringify(stats));
+    }
+
+    function loadAppData() {
+      const fallback = {"persona":"","drafts":{},"notes":{},"reminders":"","cards":[],"customTopics":[],"topicEdits":{},"deletedTopicIds":[]};
+      try {
+        const parsed = JSON.parse(localStorage.getItem(appKey));
+        if (!parsed || typeof parsed !== "object") return fallback;
+        return {
+          persona: typeof parsed.persona === "string" ? parsed.persona : "",
+          drafts: parsed.drafts || {},
+          notes: parsed.notes || {},
+          reminders: parsed.reminders ?? fallback.reminders,
+          cards: Array.isArray(parsed.cards) && parsed.cards.length ? parsed.cards : fallback.cards,
+          customTopics: Array.isArray(parsed.customTopics) ? parsed.customTopics : [],
+          topicEdits: parsed.topicEdits && typeof parsed.topicEdits === "object" ? parsed.topicEdits : {},
+          deletedTopicIds: Array.isArray(parsed.deletedTopicIds) ? parsed.deletedTopicIds : []
+        };
+      } catch {
+        return fallback;
+      }
+    }
+
+    function saveAppData() {
+      localStorage.setItem(appKey, JSON.stringify(appData));
+    }
+
+    function syncCustomTopics() {
+      for (const topic of appData.customTopics || []) {
+        if (!topics.some(existing => existing.id === topic.id)) topics.push(topic);
+      }
+    }
+
+    function applyDeletedTopics() {
+      const deleted = new Set(appData.deletedTopicIds || []);
+      for (let index = topics.length - 1; index >= 0; index--) {
+        if (deleted.has(topics[index].id)) topics.splice(index, 1);
+      }
+      state.topicIndex = Math.min(state.topicIndex, Math.max(0, topics.length - 1));
+    }
+
+    function applyTopicEdits() {
+      const edits = appData.topicEdits || {};
+      for (const [id, edit] of Object.entries(edits)) {
+        const topic = topics.find(item => item.id === id);
+        if (!topic || !edit) continue;
+        if (typeof edit.title === "string") topic.title = edit.title;
+        if (typeof edit.role === "string") topic.role = edit.role;
+        if (typeof edit.scenario === "string") topic.scenario = edit.scenario;
+        if (Array.isArray(edit.tags)) topic.tags = cleanTags(edit.tags);
+      }
+    }
+
+    function cleanTags(tags) {
+      const raw = Array.isArray(tags) ? tags : [];
+      const merged = [];
+      for (let i = 0; i < raw.length; i++) {
+        const current = String(raw[i] || "").trim();
+        const next = String(raw[i + 1] || "").trim();
+        if ((current === "logeme" || current === "logemen") && next === "t") {
+          merged.push("logement");
+          i++;
+          continue;
+        }
+        if (current) merged.push(current);
+      }
+      return [...new Set(merged)];
+    }
+
+    function parseTags(text) {
+      return cleanTags(String(text || "")
+        .split(/[,;\n\uFF0C\uFF1B]+/)
+        .map(tag => tag.trim())
+        .filter(Boolean));
+    }
+
+    function syncTopicEditorFields() {
+      const panel = $("topicEditPanel");
+      if (!panel || panel.classList.contains("hidden")) return;
+      const topic = getTopic();
+      $("editTopicTitle").value = topic.title || "";
+      $("editTopicRole").value = topic.role || "";
+      $("editTopicScenario").value = topic.scenario || "";
+      $("editTopicTags").value = cleanTags(topic.tags || []).join(", ");
+    }
+
+    function openTopicEditor() {
+      $("topicEditPanel").classList.remove("hidden");
+      syncTopicEditorFields();
+      $("editTopicTitle").focus();
+    }
+
+    function closeTopicEditor() {
+      $("topicEditPanel").classList.add("hidden");
+    }
+
+    function saveTopicEdit() {
+      const topic = getTopic();
+      const tags = parseTags($("editTopicTags").value);
+      topic.title = $("editTopicTitle").value.trim() || topic.title;
+      topic.role = $("editTopicRole").value.trim() || "Je suis votre interlocuteur/interlocutrice.";
+      topic.scenario = $("editTopicScenario").value.trim();
+      topic.tags = cleanTags(tags.length ? tags : ["custom"]);
+      appData.topicEdits = appData.topicEdits || {};
+      appData.topicEdits[topic.id] = {
+        title: topic.title,
+        role: topic.role,
+        scenario: topic.scenario,
+        tags: cleanTags(topic.tags)
+      };
+      saveAppData();
+      closeTopicEditor();
+      render();
+    }
+
+    function resetTopicEdit() {
+      const topic = getTopic();
+      if (!confirm("Restore the original title, scenario, and tags for this topic?")) return;
+      const original = originalTopics.get(topic.id);
+      if (original) Object.assign(topic, cloneTopic(original));
+      if (appData.topicEdits) delete appData.topicEdits[topic.id];
+      saveAppData();
+      closeTopicEditor();
+      render();
+    }
+
+    function deleteCurrentTopic() {
+      const topic = getTopic();
+      if (!topic) return;
+      const title = topic.title || "this topic";
+      if (!confirm(`Delete "${title}"?\n\nThis removes the topic from the trainer and clears its draft, notes, saved edits, and practice count.`)) return;
+
+      const id = topic.id;
+      appData.customTopics = (appData.customTopics || []).filter(item => item.id !== id);
+      appData.deletedTopicIds = Array.from(new Set([...(appData.deletedTopicIds || []), id]));
+      if (appData.topicEdits) delete appData.topicEdits[id];
+      if (appData.drafts) delete appData.drafts[id];
+      if (appData.notes) delete appData.notes[id];
+
+      const stats = loadStats();
+      if (stats.topicSessions) {
+        delete stats.topicSessions[id];
+        saveStats(stats);
+      }
+
+      const deletedIndex = state.topicIndex;
+      const topicIndex = topics.findIndex(item => item.id === id);
+      if (topicIndex >= 0) topics.splice(topicIndex, 1);
+      saveAppData();
+      closeTopicEditor();
+
+      if (!topics.length) {
+        state.topicIndex = 0;
+        $("topicCount").textContent = 0;
+        $("sessionCount").textContent = stats.sessions || 0;
+        $("topicTitle").textContent = "没有题目";
+        $("scenarioText").textContent = "请先添加或导入题目。";
+        $("tagRow").innerHTML = "";
+        $("topicList").innerHTML = `<div class="empty">没有题目。</div>`;
+        $("visibleCount").textContent = "显示 0 / 0";
+        resetPractice(false);
+
+        return;
+      }
+
+      state.topicIndex = Math.min(deletedIndex, topics.length - 1);
+      resetPractice(false);
+    }
+
+    function currentTopicId() {
+      return getTopic().id;
+    }
+
+    function saveWorkspace() {
+      const editor = $("practiceEditor");
+      if (!editor || !getTopic()) return;
+      appData.drafts[currentTopicId()] = editor.innerHTML;
+      appData.reminders = $("reminderText")?.value ?? appData.reminders;
+      saveAppData();
+    }
+
+    function loadWorkspaceForTopic() {
+      const topic = getTopic();
+      const editor = $("practiceEditor");
+      if (!editor) return;
+      const saved = appData.drafts[topic.id];
+      editor.innerHTML = saved || `<p>${escapeHtml(topic.opening)}</p>`;
+    }
+
+    function getTopicNotes() {
+      const id = currentTopicId();
+      appData.notes[id] = appData.notes[id] || [];
+      return appData.notes[id];
+    }
+
+    function resetPractice(keepTopic = true) {
+      const topic = getTopic();
+      state.messages = topic ? [{ who: "bot", text: topic.opening }] : [];
+      state.asked = {};
+      state.duplicates = {};
+      state.reviewDone = false;
+
+      render();
+    }
+
+    function render() {
+      const topic = getTopic();
+      for (const id of ['editTopicBtn','resetBtn','hintBtn','nextBtn','finishBtn','randomBtn','highlightBtn','noteBtn','insertNextBtn','saveDraftBtn','sendBtn']) $(id).disabled = !topic;
+      $("practiceEditor").contentEditable = topic ? "true" : "false";
+      $("userInput").disabled = !topic;
+      if (!topic) {
+        $("topicCount").textContent = topics.length;
+        $("sessionCount").textContent = loadStats().sessions || 0;
+        $("topicTitle").textContent = "欢迎使用 TCF Task 2 Trainer";
+        $("scenarioText").textContent = "点击左侧 Add topic 新建题目，或用右侧 Import 导入备份。";
+        $("tagRow").replaceChildren(); $("practiceEditor").replaceChildren(); $("notesList").replaceChildren();
+        renderTopicFilters(); renderTopicList(loadStats()); renderChat(); renderPersona(); renderQuestionCards();
+        $("reminderText").value = appData.reminders || "";
+        return;
+      }
+      const stats = loadStats();
+      $("topicCount").textContent = topics.length;
+      $("sessionCount").textContent = stats.sessions || 0;
+      $("topicTitle").textContent = topic.title;
+      $("scenarioText").textContent = `${topic.role}\n${topic.scenario}`;
+      topic.tags = cleanTags(topic.tags || []);
+      $("tagRow").innerHTML = topic.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join("");
+      syncTopicEditorFields();
+      renderTopicFilters();
+      renderTopicList(stats);
+      renderChat();
+      renderPersona();
+      loadWorkspaceForTopic();
+      renderNotes();
+      renderQuestionCards();
+      $("reminderText").value = appData.reminders || "";
+    }
+
+    function renderTopicList(stats) {
+      const visibleTopics = getVisibleTopics();
+      $("visibleCount").textContent = `显示 ${visibleTopics.length} / ${topics.length}`;
+      $("topicList").innerHTML = visibleTopics.map(({ topic, index }) => {
+        const count = stats.topicSessions?.[topic.id] || 0;
+        return `<button class="topic ${index === state.topicIndex ? "active" : ""}" data-topic="${index}">
+          <div class="topic-title">${index + 1}. ${escapeHtml(topic.title)}</div>
+          <div class="topic-role">${escapeHtml(topic.role)}</div>
+          <div class="topic-meta">练习 ${count} 次 · ${escapeHtml(topic.tags.slice(0, 4).join(" / "))}</div>
+        </button>`;
+      }).join("") || `<div class="empty">没有匹配的题目。</div>`;
+      document.querySelectorAll("[data-topic]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const list = $("topicList");
+          const scrollTop = list.scrollTop;
+          const restoreFocus = document.activeElement === btn;
+          saveWorkspace();
+          state.topicIndex = Number(btn.dataset.topic);
+          resetPractice(false);
+          // Rendering rebuilds the navigation; keep the clicked position and keyboard focus.
+          if (restoreFocus) {
+            list.querySelector('[data-topic="' + state.topicIndex + '"]')?.focus({ preventScroll: true });
+          }
+          list.scrollTop = scrollTop;
+        });
+      });
+    }
+
+    function renderTopicFilters() {
+      const select = $("topicFilter");
+      const tags = [...new Set(topics.flatMap(topic => cleanTags(topic.tags || [])))].sort((a, b) => a.localeCompare(b, "zh"));
+      select.innerHTML = '<option value="">' + (state.topicFilters.length ? '继续添加标签…' : '全部分类 · 添加标签…') + '</option>'
+        + tags.filter(tag => !state.topicFilters.includes(tag)).map(tag => '<option value="' + escapeHtml(tag) + '">' + escapeHtml(tag) + '</option>').join("");
+      select.value = "";
+      const container = $("selectedTopicFilters");
+      container.replaceChildren();
+      state.topicFilters.forEach(tag => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "filter-chip";
+        button.textContent = tag + " ×";
+        button.setAttribute("aria-label", "移除标签：" + tag);
+        button.addEventListener("click", () => {
+          state.topicFilters = state.topicFilters.filter(item => item !== tag);
+          renderTopicFilters();
+          renderTopicList(loadStats());
+        });
+        container.append(button);
+      });
+      if (state.topicFilters.length) {
+        const clear = document.createElement("button");
+        clear.type = "button";
+        clear.textContent = "清空标签";
+        clear.addEventListener("click", () => {
+          state.topicFilters = [];
+          renderTopicFilters();
+          renderTopicList(loadStats());
+        });
+        container.append(clear);
+      }
+      $("topicSearch").value = state.topicSearch;
+    }
+
+    function getVisibleTopics() {
+      const q = normalize(state.topicSearch);
+      return topics.map((topic, index) => ({ topic, index })).filter(({ topic }) => {
+        const topicTags = cleanTags(topic.tags || []);
+        const tagMatch = state.topicFilters.every(tag => topicTags.includes(tag));
+        const haystack = normalize([topic.title, topic.role, topic.scenario, ...topicTags].join(" "));
+        return tagMatch && (!q || haystack.includes(q));
+      });
+    }
+
+    function renderChat() {
+      $("chat").innerHTML = state.messages.map(msg => {
+        const klass = msg.who === "user" ? "message user" : "message bot";
+        return `<div class="${klass}">${escapeHtml(msg.text)}</div>`;
+      }).join("");
+      $("chat").scrollTop = $("chat").scrollHeight;
+    }
+
+    function renderPersona() {
+      $("personaText").value = appData.persona || "";
+    }
+
+    function renderReviewPanel() {
+      if (!state.reviewDone) return "";
+      const topic = getTopic();
+      const askedEntries = state.messages.filter(msg => msg.who === "user");
+      const missed = topic.questions.filter(q => !state.asked[q.key]);
+      const repeated = Object.entries(state.duplicates).filter(([, count]) => count > 0);
+
+      const rows = askedEntries.map(msg => {
+        const match = matchQuestion(msg.text, false);
+        const standard = match ? match.standard : "Aucune correspondance claire";
+        const suggestion = match ? match.suggestion : "Essaie de poser une question plus complète.";
+        return `<tr><td>${escapeHtml(msg.text)}</td><td>${escapeHtml(standard)}</td><td>${escapeHtml(suggestion)}</td></tr>`;
+      }).join("");
+
+      return `<div class="review-panel">
+        <h3>本次练习</h3>
+        <p class="small">共提问 ${askedEntries.length} 个 · 漏问 ${missed.length} 个 · 重复 ${repeated.length} 类</p>
+        <h3>遗漏</h3>
+        ${missed.length ? missed.map(q => `<div class="ref-item missed">${escapeHtml(q.standard)}</div>`).join("") : `<div class="empty">没有明显遗漏。</div>`}
+        <h3>重复</h3>
+        ${repeated.length ? repeated.map(([key, count]) => `<div class="ref-item">${escapeHtml(topic.questions.find(q => q.key === key).label)} · 重复 ${count} 次</div>`).join("") : `<div class="empty">没有明显重复。</div>`}
+        <h3>对照</h3>
+        <table><thead><tr><th>你的提问</th><th>标准版</th><th>建议</th></tr></thead><tbody>${rows || `<tr><td colspan="3">还没有提问。</td></tr>`}</tbody></table>
+      </div>`;
+    }
+
+    function renderNotes() {
+      const notes = getTopicNotes();
+      $("notesList").innerHTML = notes.length ? notes.map((note, index) => `
+        <div class="note-item">
+          <strong>${escapeHtml(note.text)}</strong>
+          <div>${escapeHtml(note.comment)}</div>
+          <div class="small">${escapeHtml(note.createdAt)}</div>
+          <div class="note-actions">
+            <button data-edit-note="${index}">Edit</button>
+            <button class="danger" data-delete-note="${index}">Delete</button>
+          </div>
+        </div>
+      `).join("") : `<div class="empty">还没有批注。选中练习稿里的文字，然后点 Add note。</div>`;
+
+      document.querySelectorAll("[data-edit-note]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const note = notes[Number(btn.dataset.editNote)];
+          const next = prompt("修改批注", note.comment);
+          if (next === null) return;
+          note.comment = next.trim();
+          saveAppData();
+          renderNotes();
+        });
+      });
+
+      document.querySelectorAll("[data-delete-note]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          notes.splice(Number(btn.dataset.deleteNote), 1);
+          saveAppData();
+          renderNotes();
+        });
+      });
+    }
+
+    function renderQuestionCards() {
+      normalizeQuestionCards();
+      const keyword = normalize($("cardSearch")?.value || "");
+      const cards = [...appData.cards]
+        .sort((a, b) => a.title.localeCompare(b.title, "fr"))
+        .filter(card => !keyword || normalize(card.title).includes(keyword) || card.items.some(item => normalize(item).includes(keyword)));
+
+      $("questionCards").innerHTML = cards.map(card => `
+        <details class="question-card">
+          <summary><span>${escapeHtml(card.title)}</span><span>${card.items.length}</span></summary>
+          <ul>${card.items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+          <div class="backup-row" style="padding: 0 10px 10px;">
+            <button data-add-question="${escapeHtml(card.key)}">Add question</button>
+            <button data-edit-card="${escapeHtml(card.key)}">Edit</button>
+            <button class="danger" data-delete-card="${escapeHtml(card.key)}">Delete</button>
+          </div>
+        </details>
+      `).join("") || `<div class="empty">没有匹配的问题卡片。</div>`;
+
+      document.querySelectorAll("[data-edit-card]").forEach(btn => {
+        btn.addEventListener("click", () => editCard(btn.dataset.editCard));
+      });
+      document.querySelectorAll("[data-add-question]").forEach(btn => {
+        btn.addEventListener("click", () => addQuestionToCard(btn.dataset.addQuestion));
+      });
+      document.querySelectorAll("[data-delete-card]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          appData.cards = appData.cards.filter(card => card.key !== btn.dataset.deleteCard);
+          saveAppData();
+          renderQuestionCards();
+        });
+      });
+    }
+
+    function editCard(key) {
+      const card = appData.cards.find(item => item.key === key);
+      if (!card) return;
+      const title = prompt("卡片标题", card.title);
+      if (title === null) return;
+      const body = prompt("问题列表：每行一个问题", card.items.join("\n"));
+      if (body === null) return;
+      card.title = title.trim() || card.title;
+      card.items = splitQuestionItems(body);
+      saveAppData();
+      renderQuestionCards();
+    }
+
+    function addQuestionToCard(key) {
+      const card = appData.cards.find(item => item.key === key);
+      if (!card) return;
+      const text = prompt("添加问题：可以一次输入一个，也可以输入多个问号结尾的问题。", "");
+      if (text === null) return;
+      const items = splitQuestionItems(text);
+      if (!items.length) return;
+      card.items.push(...items);
+      saveAppData();
+      renderQuestionCards();
+    }
+
+    function splitQuestionItems(text) {
+      return String(text || "")
+        .replace(/([?？])\s+/g, "$1\n")
+        .split(/\n+/)
+        .map(item => item.trim())
+        .filter(Boolean);
+    }
+
+    function normalizeQuestionCards() {
+      let changed = false;
+      for (const card of appData.cards) {
+        const normalized = card.items.flatMap(item => splitQuestionItems(item));
+        if (normalized.length !== card.items.length || normalized.some((item, index) => item !== card.items[index])) {
+          card.items = normalized;
+          changed = true;
+        }
+      }
+      if (changed) saveAppData();
+    }
+
+    function addCard() {
+      const title = prompt("新卡片标题，例如 prix / transport / logement");
+      if (!title) return;
+      const body = prompt("问题列表：每行一个问题", "");
+      const key = normalize(title).replace(/\s+/g, "-") + "-" + Date.now().toString(36);
+      appData.cards.push({
+        key,
+        title: title.trim(),
+        items: splitQuestionItems(body)
+      });
+      saveAppData();
+      renderQuestionCards();
+    }
+
+    function addTopic() {
+      const title = prompt("题目中文名，例如：图书馆报名");
+      if (!title) return;
+      const role = prompt("考官身份 / role", "Je suis ...");
+      if (role === null) return;
+      const scenario = prompt("题目场景 / scenario", "Vous ... Posez-moi des questions.");
+      if (scenario === null) return;
+      const questionsText = prompt("标准问题清单：每行一个问题", "Quel est le prix ?\nQuels sont les horaires ?");
+      if (questionsText === null) return;
+
+      const questions = questionsText.split(/\n+/).map((line, index) => {
+        const standard = line.trim();
+        if (!standard) return null;
+        const words = normalize(standard).split(" ").filter(word => word.length > 3).slice(0, 8);
+        return {
+          key: `q-${index + 1}`,
+          label: `Q${index + 1}`,
+          standard,
+          hint: words.slice(0, 3).join(" ") || `question ${index + 1}`,
+          response: "Oui, je peux vous donner cette information.",
+          keywords: words,
+          suggestion: `Standard : ${standard}`
+        };
+      }).filter(Boolean);
+
+      const topic = {
+        id: `custom-${Date.now().toString(36)}`,
+        title: title.trim(),
+        stars: 5,
+        role: role.trim() || "Je suis votre interlocuteur/interlocutrice.",
+        scenario: scenario.trim(),
+        tags: ["custom"],
+        opening: "Bonjour, je vous écoute.",
+        closing: "Avec plaisir. Bonne journée.",
+        questions,
+        chunks: []
+      };
+      appData.customTopics = appData.customTopics || [];
+      appData.customTopics.push(topic);
+      topics.push(topic);
+      saveAppData();
+      state.topicIndex = topics.length - 1;
+      resetPractice(false);
+    }
+
+    function matchQuestion(text, countState = true) {
+      const topic = getTopic();
+      const normalized = normalize(text);
+      let best = null;
+      let bestScore = 0;
+
+      for (const q of topic.questions) {
+        const score = q.keywords.reduce((sum, word) => {
+          return sum + (normalized.includes(normalize(word)) ? 1 : 0);
+        }, 0);
+        if (score > bestScore) {
+          best = q;
+          bestScore = score;
+        }
+      }
+
+      if (!best || bestScore === 0) return null;
+
+      if (countState) {
+        if (state.asked[best.key]) state.duplicates[best.key] = (state.duplicates[best.key] || 0) + 1;
+        state.asked[best.key] = true;
+      }
+      return best;
+    }
+
+    function sendMessage() {
+      if (!getTopic()) return;
+      const input = $("userInput");
+      const text = input.value.trim();
+      if (!text) return;
+
+      state.messages.push({ who: "user", text });
+      const match = matchQuestion(text, true);
+      const reply = match ? match.response : getFallbackReply(text);
+      state.messages.push({ who: "bot", text: reply });
+      insertEditorText(`\nMoi : ${text}\nExaminateur : ${reply}\n`);
+      input.value = "";
+      saveWorkspace();
+      render();
+    }
+
+    function insertEditorText(text) {
+      if (!getTopic()) return;
+      const editor = $("practiceEditor");
+      editor.focus();
+      document.execCommand("insertText", false, text);
+      appData.drafts[currentTopicId()] = editor.innerHTML;
+      saveAppData();
+    }
+
+    function getSelectedTextInEditor() {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return "";
+      const editor = $("practiceEditor");
+      const range = selection.getRangeAt(0);
+      if (!editor.contains(range.commonAncestorContainer)) return "";
+      return selection.toString().trim();
+    }
+
+    function highlightSelection() {
+      const selection = window.getSelection();
+      const selected = getSelectedTextInEditor();
+      if (!selection || !selected) {
+        alert("先在练习稿里选中一段文字。");
+        return;
+      }
+      const range = selection.getRangeAt(0);
+      const mark = findClosestHighlight(range.commonAncestorContainer);
+      if (mark) {
+        unwrapElement(mark);
+      } else {
+        wrapSelectionWithHighlight(range);
+      }
+      selection.removeAllRanges();
+      saveWorkspace();
+    }
+
+    function findClosestHighlight(node) {
+      const editor = $("practiceEditor");
+      let current = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+      while (current && current !== editor) {
+        if (current.matches && current.matches("mark.note-highlight")) return current;
+        current = current.parentElement;
+      }
+      return null;
+    }
+
+    function wrapSelectionWithHighlight(range) {
+      const mark = document.createElement("mark");
+      mark.className = "note-highlight";
+      try {
+        range.surroundContents(mark);
+      } catch {
+        const fragment = range.extractContents();
+        mark.appendChild(fragment);
+        range.insertNode(mark);
+      }
+    }
+
+    function unwrapElement(element) {
+      const parent = element.parentNode;
+      while (element.firstChild) parent.insertBefore(element.firstChild, element);
+      parent.removeChild(element);
+      parent.normalize();
+    }
+
+    function addNoteFromSelection() {
+      const selection = window.getSelection();
+      const selected = getSelectedTextInEditor();
+      if (!selected) {
+        alert("先在练习稿里选中一段文字。");
+        return;
+      }
+      const comment = prompt("给这段文字写批注", "");
+      if (comment === null) return;
+      if (selection && selection.rangeCount) {
+        const range = selection.getRangeAt(0);
+        if (!findClosestHighlight(range.commonAncestorContainer)) wrapSelectionWithHighlight(range);
+        selection.removeAllRanges();
+      }
+      getTopicNotes().push({
+        text: selected,
+        comment: comment.trim() || "需要复习",
+        createdAt: new Date().toLocaleString()
+      });
+      saveWorkspace();
+      saveAppData();
+      renderNotes();
+    }
+
+    function getFallbackReply(text) {
+      const normalized = normalize(text);
+      if (normalized.includes("possible") || normalized.includes("peux") || normalized.includes("puis")) {
+        return "Oui, c'est possible, mais cela dépend de vos besoins.";
+      }
+      if (normalized.includes("combien") || normalized.includes("prix") || normalized.includes("tarif")) {
+        return "Le prix dépend de la formule, mais je peux vous donner les détails.";
+      }
+      if (normalized.includes("quand") || normalized.includes("heure") || normalized.includes("date")) {
+        return "Oui, on peut fixer un moment cette semaine.";
+      }
+      if (normalized.includes("ou") || normalized.includes("adresse") || normalized.includes("lieu")) {
+        return "C'est bien situé, dans un quartier pratique et assez calme.";
+      }
+      return "Oui, c'est possible. Qu'est-ce que vous voulez savoir exactement ?";
+    }
+
+    function showHint() {
+      saveWorkspace();
+      const next = getNextQuestion();
+      const text = next ? `Indice : pense à demander ${next.hint}.` : "Tu as déjà couvert toutes les questions principales.";
+      state.messages.push({ who: "bot", text });
+      render();
+    }
+
+    function showNextQuestion() {
+      const next = getNextQuestion();
+      if (next) $("userInput").value = next.standard;
+    }
+
+    function insertNextQuestion() {
+      const next = getNextQuestion();
+      if (next) insertEditorText(`\n${next.standard}\n`);
+    }
+
+    function getNextQuestion() {
+      return getTopic().questions.find(q => !state.asked[q.key]);
+    }
+
+    function finishReview() {
+      if (state.reviewDone) return;
+      saveWorkspace();
+      const topic = getTopic();
+      state.reviewDone = true;
+
+      state.messages.push({ who: "bot", text: topic.closing });
+      const stats = loadStats();
+      stats.sessions = (stats.sessions || 0) + 1;
+      stats.topicSessions = stats.topicSessions || {};
+      stats.topicSessions[topic.id] = (stats.topicSessions[topic.id] || 0) + 1;
+      saveStats(stats);
+      render();
+    }
+
+    function randomTopic() {
+      saveWorkspace();
+      state.topicIndex = Math.floor(Math.random() * topics.length);
+      resetPractice(false);
+    }
+
+    function clearInput() {
+      $("userInput").value = "";
+    }
+
+    function exportBackup() {
+      saveWorkspace();
+      const payload = {
+        version: 2,
+        exportedAt: new Date().toISOString(),
+        appData,
+        topics
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `tcf-task2-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function formatTopicForExport(topic, index) {
+      const lines = [
+        `${index + 1}. ${topic.title || "未命名题目"}`,
+        `标签：${cleanTags(topic.tags || []).join(" / ") || "无"}`,
+        `角色：${topic.role || ""}`,
+        "",
+        "题目：",
+        topic.scenario || "",
+      ];
+
+      if (topic.opening) lines.push("", `开场：${topic.opening}`);
+      if (Array.isArray(topic.questions) && topic.questions.length) {
+        lines.push("", "可问问题：");
+        topic.questions.forEach((question, questionIndex) => {
+          lines.push(`${questionIndex + 1}. ${question.standard || question.label || ""}`);
+          if (question.response) lines.push(`   回答：${question.response}`);
+        });
+      }
+      if (topic.closing) lines.push("", `结束：${topic.closing}`);
+      if (Array.isArray(topic.chunks) && topic.chunks.length) {
+        lines.push("", `Chunks：${topic.chunks.join(" / ")}`);
+      }
+      return lines.join("\n").trim();
+    }
+
+    function exportVisibleTopicsText() {
+      const visibleTopics = getVisibleTopics();
+      if (!visibleTopics.length) {
+        alert("当前筛选没有题目可导出。");
+        return;
+      }
+      const filterLabel = state.topicFilters.length ? state.topicFilters.join(" + ") : "全部分类";
+      const header = [
+        "TCF Task 2 Trainer - 当前列表导出",
+        `筛选：${filterLabel}`,
+        `搜索：${state.topicSearch || "无"}`,
+        `数量：${visibleTopics.length} / ${topics.length}`,
+        `导出时间：${new Date().toLocaleString()}`,
+        ""
+      ].join("\n");
+      const body = visibleTopics
+        .map(({ topic, index }) => formatTopicForExport(topic, index))
+        .join("\n\n---\n\n");
+      const blob = new Blob([header + body + "\n"], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const safeFilter = filterLabel.replace(/[\\/:*?"<>|]+/g, "-");
+      link.href = url;
+      link.download = `tcf-task2-${safeFilter}-${new Date().toISOString().slice(0, 10)}.txt`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importBackupFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          const incoming = parsed.appData || parsed;
+          appData = {
+            persona: typeof incoming.persona === "string" ? incoming.persona : "",
+            drafts: incoming.drafts || {},
+            notes: incoming.notes || {},
+            reminders: incoming.reminders || "",
+            cards: Array.isArray(incoming.cards) ? incoming.cards : defaultQuestionCards,
+            customTopics: Array.isArray(incoming.customTopics) ? incoming.customTopics : [],
+            topicEdits: incoming.topicEdits && typeof incoming.topicEdits === "object" ? incoming.topicEdits : {},
+            deletedTopicIds: Array.isArray(incoming.deletedTopicIds) ? incoming.deletedTopicIds : []
+          };
+          if (Array.isArray(parsed.topics)) {
+            topics.splice(0, topics.length);
+            originalTopics.clear();
+            appData.customTopics = parsed.topics;
+            state.topicIndex = 0;
+          }
+          syncCustomTopics();
+          applyDeletedTopics();
+          for (const topic of topics) {
+            if (!originalTopics.has(topic.id)) originalTopics.set(topic.id, cloneTopic(topic));
+          }
+          applyTopicEdits();
+          saveAppData();
+          render();
+          alert("导入完成。");
+        } catch (error) {
+          alert("导入失败：这个 JSON 文件格式不对。");
+        }
+      };
+      reader.readAsText(file, "utf-8");
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function setupSpeech() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        $("micBtn").disabled = true;
+        $("micBtn").title = "当前浏览器不支持语音输入";
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = "fr-FR";
+      recognition.interimResults = false;
+      recognition.continuous = false;
+
+      recognition.onresult = (event) => {
+        $("userInput").value = event.results[0][0].transcript;
+      };
+      recognition.onend = () => $("micBtn").classList.remove("primary");
+
+      $("micBtn").addEventListener("click", () => {
+        $("micBtn").classList.add("primary");
+        recognition.start();
+      });
+    }
+
+    $("sendBtn").addEventListener("click", sendMessage);
+    $("userInput").addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) sendMessage();
+    });
+    $("practiceEditor").addEventListener("input", () => {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(saveWorkspace, 350);
+    });
+    $("resetBtn").addEventListener("click", () => {
+      saveWorkspace();
+      resetPractice(true);
+    });
+    $("hintBtn").addEventListener("click", showHint);
+    $("nextBtn").addEventListener("click", showNextQuestion);
+    $("insertNextBtn").addEventListener("click", insertNextQuestion);
+    $("highlightBtn").addEventListener("click", highlightSelection);
+    $("noteBtn").addEventListener("click", addNoteFromSelection);
+    $("saveDraftBtn").addEventListener("click", saveWorkspace);
+    $("finishBtn").addEventListener("click", finishReview);
+    $("editTopicBtn").addEventListener("click", openTopicEditor);
+    $("saveTopicEditBtn").addEventListener("click", saveTopicEdit);
+    $("cancelTopicEditBtn").addEventListener("click", closeTopicEditor);
+    $("resetTopicEditBtn").addEventListener("click", resetTopicEdit);
+    $("deleteTopicBtn").addEventListener("click", deleteCurrentTopic);
+    $("randomBtn").addEventListener("click", randomTopic);
+    $("clearBtn").addEventListener("click", clearInput);
+    $("saveReminderBtn").addEventListener("click", saveWorkspace);
+    $("reminderText").addEventListener("input", () => {
+      appData.reminders = $("reminderText").value;
+      saveAppData();
+    });
+    $("cardSearch").addEventListener("input", renderQuestionCards);
+    $("addCardBtn").addEventListener("click", addCard);
+    $("addTopicBtn").addEventListener("click", addTopic);
+    $("exportVisibleBtn").addEventListener("click", exportVisibleTopicsText);
+    $("exportBtn").addEventListener("click", exportBackup);
+    $("importBtn").addEventListener("click", () => $("importFile").click());
+    $("importFile").addEventListener("change", (event) => importBackupFile(event.target.files[0]));
+    $("topicSearch").addEventListener("input", () => {
+      state.topicSearch = $("topicSearch").value;
+      renderTopicList(loadStats());
+    });
+    $("topicFilter").addEventListener("change", () => {
+      const tag = $("topicFilter").value;
+      if (tag && !state.topicFilters.includes(tag)) state.topicFilters.push(tag);
+      renderTopicFilters();
+      renderTopicList(loadStats());
+    });
+    $("personaText").addEventListener("input", () => {
+      appData.persona = $("personaText").value;
+      try {
+        saveAppData();
+        $("personaSaveStatus").textContent = "所有题目共用 · 已自动保存";
+      } catch (error) {
+        $("personaSaveStatus").textContent = "保存失败，请先复制人设内容留存。";
+      }
+    });
+
+    resetPractice(false);
+    try {
+      setupSpeech();
+    } catch (error) {
+      $("micBtn").disabled = true;
+      $("micBtn").title = "当前浏览器不支持语音输入";
+      console.warn("Speech input is unavailable:", error);
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
