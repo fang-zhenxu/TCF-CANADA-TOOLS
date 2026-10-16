@@ -1,0 +1,1425 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCF Writing Simulator v1</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <!-- JsDiff -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/5.1.0/diff.min.js"></script>
+
+    <!-- Google Fonts: Patrick Hand -->
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Patrick Hand', cursive;
+            background-color: #f0f0f0;
+            background-image: radial-gradient(#ccc 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: #222;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .blur-transition { transition: filter 0.2s ease, opacity 0.2s ease; }
+
+        .sketch-input {
+            border: 2px solid #222;
+            background-color: #fff;
+            transition: all 0.2s ease;
+            color: #222;
+        }
+        .sketch-input:focus {
+            outline: none;
+            box-shadow: 4px 4px 0 0 #222;
+            transform: translate(-1px, -1px);
+        }
+
+        .sketch-btn {
+            background-color: #fff;
+            border: 2px solid #222;
+            box-shadow: 3px 3px 0 0 #222;
+            color: #222;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            user-select: none;
+        }
+        .sketch-btn:hover:not(:disabled) {
+            background-color: #222;
+            color: #fff;
+            transform: translate(-1px, -1px);
+            box-shadow: 5px 5px 0 0 rgba(0,0,0,0.2);
+        }
+        .sketch-btn:active:not(:disabled), .sketch-btn.active {
+            transform: translate(3px, 3px);
+            box-shadow: 0 0 0 0 transparent;
+        }
+        .sketch-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .sketch-card {
+            background-color: #fff;
+            border: 2px solid #222;
+            box-shadow: 6px 6px 0 0 #222;
+        }
+
+        .sketch-border-bottom { border-bottom: 2px solid #222; }
+
+        input, textarea, select, button {
+            font-family: 'Patrick Hand', cursive;
+        }
+
+        .btn-icon:hover {
+            background-color: #eee;
+            color: #222;
+            box-shadow: 2px 2px 0 0 #222;
+        }
+
+        .tab-btn {
+            border: 2px solid #222;
+            background-color: #fff;
+            color: #222;
+            transition: all 0.15s ease;
+        }
+        .tab-btn.tab-active {
+            background-color: #222;
+            color: #fff;
+        }
+
+        .badge-v1 {
+            display: inline-block;
+            font-size: 0.7rem;
+            background: #222;
+            color: #fff;
+            padding: 1px 6px;
+            border-radius: 4px;
+            transform: rotate(-3deg);
+            margin-left: 6px;
+        }
+    </style>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { black: '#222' },
+                    fontFamily: { sans: ['"Patrick Hand"', 'cursive'] }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col">
+
+    <div id="app" class="h-full flex flex-col">
+
+        <!-- TOP BAR -->
+        <header class="bg-white sketch-border-bottom z-20 flex-none h-20 px-6 flex items-center justify-between shrink-0 shadow-sm relative">
+            <div class="flex items-center gap-3">
+                <div class="border-2 border-black rounded-full p-1.5 bg-black text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold tracking-wide hidden sm:block">TCF Writing Simulator<span class="badge-v1">v1</span></h1>
+                <h1 class="text-2xl font-bold tracking-wide sm:hidden">TCF Sim<span class="badge-v1">v1</span></h1>
+            </div>
+
+            <!-- Virtual Keyboard -->
+            <div class="flex-1 flex justify-center max-w-3xl mx-4">
+                <div class="bg-white p-2 rounded-xl border-2 border-black shadow-[4px_4px_0_0_#222] flex items-center gap-3">
+                    <button
+                        @click="toggleCaps"
+                        class="h-9 w-9 flex items-center justify-center rounded-md border-2 border-black transition-all text-sm font-bold"
+                        :class="isUppercase ? 'bg-black text-white translate-x-[1px] translate-y-[1px]' : 'bg-white text-black shadow-[2px_2px_0_0_#222] hover:bg-gray-100 hover:-translate-y-0.5'"
+                        title="Toggle Uppercase"
+                    >
+                        <span v-if="isUppercase">ABC</span>
+                        <span v-else>abc</span>
+                    </button>
+                    <div class="h-8 w-0.5 bg-black rounded-full opacity-20"></div>
+                    <div class="flex gap-1.5 overflow-x-auto no-scrollbar max-w-[180px] sm:max-w-none px-1 py-1">
+                        <button
+                            v-for="char in currentChars"
+                            :key="char"
+                            @mousedown.prevent="insertChar(char)"
+                            class="h-9 w-9 shrink-0 flex items-center justify-center rounded-md bg-white border-2 border-black text-black shadow-[2px_2px_0_0_#222] hover:bg-black hover:text-white active:translate-x-[2px] active:translate-y-[2px] active:shadow-none font-bold text-lg transition-all"
+                        >
+                            {{ char }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-lg text-black/40 hidden md:block rotate-2">
+                Vue 3 + Sketch UI
+            </div>
+        </header>
+
+        <!-- MAIN LAYOUT -->
+        <main class="flex-1 flex flex-col md:flex-row min-h-0 p-4 gap-6 overflow-hidden">
+
+            <!-- LEFT PANEL: TEMPLATES -->
+            <section class="flex-1 flex flex-col sketch-card rounded-xl overflow-hidden min-h-0">
+                <!-- Toolbar -->
+                <div class="p-4 bg-gray-50 border-b-2 border-black flex items-center gap-3 shrink-0 flex-wrap">
+                    <div class="flex items-center gap-2 flex-wrap shrink-0">
+                        <button
+                            v-for="cat in templateCategories"
+                            :key="cat.id"
+                            @click="setTemplateCategory(cat.id)"
+                            class="sketch-btn px-3 h-10 rounded-lg text-sm font-bold whitespace-nowrap"
+                            :class="currentTemplateCategory === cat.id ? 'bg-black text-white' : 'bg-white'"
+                            type="button"
+                        >
+                            {{ cat.label }} <span class="text-xs opacity-70">{{ templateCategoryCounts[cat.id] || 0 }}</span>
+                        </button>
+                    </div>
+                    <select
+                        v-model="currentTemplateId"
+                        @change="changeTemplate"
+                        class="sketch-input rounded-lg py-2 px-3 text-lg cursor-pointer flex-[1_1_300px] min-w-[260px] max-w-[520px]"
+                    >
+                        <option v-for="t in filteredTemplates" :key="t.id" :value="t.id">{{ t.name }}</option>
+                    </select>
+                    <input
+                        v-model="templateSearch"
+                        class="sketch-input rounded-lg py-2 px-3 text-base flex-[0_1_180px] min-w-[140px]"
+                        placeholder="搜索题目"
+                    >
+                    <div v-if="filteredTemplates.length === 0" class="text-sm text-black/50 px-1 shrink-0">
+                        当前分类没有题目。点击 + 新建一条。
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap ml-auto">
+                        <button @click="newTemplate" class="sketch-btn w-10 h-10 flex items-center justify-center rounded-lg" title="New Template">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        </button>
+                        <button @click="saveTemplates" class="sketch-btn w-10 h-10 flex items-center justify-center rounded-lg" title="Save All">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                        </button>
+                        <button @click="deleteTemplate" class="sketch-btn w-10 h-10 flex items-center justify-center rounded-lg" title="Delete Template">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                        <div class="w-px h-8 bg-black/30 mx-1"></div>
+                        <button @click="exportTemplates" class="sketch-btn px-3 h-10 flex items-center justify-center rounded-lg text-sm font-bold" title="Export all templates as JSON">Export</button>
+                        <button @click="exportPdfReader" class="sketch-btn px-3 h-10 flex items-center justify-center rounded-lg text-sm font-bold" title="Open a printable PDF reader with clickable table of contents">PDF</button>
+                        <button @click="triggerImport" class="sketch-btn px-3 h-10 flex items-center justify-center rounded-lg text-sm font-bold" title="Import templates from JSON">Import</button>
+                        <input ref="importFile" type="file" accept="application/json,.json" class="hidden" @change="onImportFile">
+                        <button @click="setApiKey" class="sketch-btn px-3 h-10 flex items-center justify-center rounded-lg text-sm font-bold"
+                                :class="{ 'bg-yellow-100': !geminiApiKey }"
+                                :title="geminiApiKey ? '修改 Gemini API Key (当前已设置)' : '设置 Gemini API Key (尚未设置)'">
+                            🔑 Key
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Template Form -->
+                <div class="flex-1 overflow-y-auto p-5 flex flex-col gap-5 bg-white">
+
+                    <!-- Template Name -->
+                    <div>
+                        <label class="block text-sm font-bold text-black uppercase mb-1 ml-1">Template Name</label>
+                        <input
+                            v-model="currentTemplate.name"
+                            @input="autoSave"
+                            class="sketch-input w-full text-lg p-3 rounded-lg"
+                            placeholder="e.g. Tâche 1: Informal Email"
+                        >
+                    </div>
+
+                    <!-- Topic -->
+                    <div class="flex-none">
+                        <label class="block text-sm font-bold text-black uppercase mb-1 ml-1">Sujet / Topic</label>
+                        <textarea
+                            ref="topicInput"
+                            v-model="currentTemplate.topic"
+                            @focus="activeField = 'topic'"
+                            @input="autoSave"
+                            class="sketch-input w-full h-24 p-3 text-lg rounded-lg resize-none"
+                            placeholder="Describe the task here..."
+                        ></textarea>
+                    </div>
+
+                    <!-- FR / ZH Tabs -->
+                    <div class="flex-1 flex flex-col min-h-[300px]">
+                        <div class="flex items-center justify-between mb-2 gap-2 flex-wrap">
+                            <div class="flex items-center gap-2">
+                                <button
+                                    @click="currentTab = 'fr'"
+                                    class="tab-btn px-3 py-1 text-sm rounded-md font-bold"
+                                    :class="{ 'tab-active': currentTab === 'fr' }"
+                                >Modèle (FR)</button>
+                                <button
+                                    @click="currentTab = 'zh'"
+                                    class="tab-btn px-3 py-1 text-sm rounded-md font-bold"
+                                    :class="{ 'tab-active': currentTab === 'zh' }"
+                                >翻译 (ZH)</button>
+                            </div>
+
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <!-- AI translate -->
+                                <button
+                                    @click="aiTranslate"
+                                    :disabled="aiTranslating"
+                                    class="sketch-btn px-3 py-1 text-sm rounded-md font-bold"
+                                    title="Use Gemini to translate FR → ZH"
+                                >
+                                    <span v-if="!aiTranslating">🤖 AI Translate (FR→ZH)</span>
+                                    <span v-else>翻译中…</span>
+                                </button>
+
+                                <!-- Blur Toggle (only meaningful for FR tab) -->
+                                <button
+                                    v-if="currentTab === 'fr'"
+                                    @click="toggleBlur"
+                                    class="sketch-btn px-3 py-1 text-sm rounded-md font-bold"
+                                    :class="hideTemplate ? 'bg-black text-white' : ''"
+                                >
+                                    <span v-if="hideTemplate">Hidden</span>
+                                    <span v-else>Hide</span>
+                                </button>
+
+                                <button
+                                    v-if="currentTab === 'fr' && hideTemplate"
+                                    @mousedown="isPeeking = true"
+                                    @mouseup="isPeeking = false"
+                                    @mouseleave="isPeeking = false"
+                                    @touchstart.prevent="isPeeking = true"
+                                    @touchend.prevent="isPeeking = false"
+                                    class="sketch-btn px-3 py-1 text-sm rounded-md font-bold bg-gray-200"
+                                >
+                                    Peek 👀
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- AI error message -->
+                        <div v-if="aiError" class="mb-2 text-sm bg-red-50 border-2 border-red-400 text-red-700 p-2 rounded">
+                            {{ aiError }}
+                        </div>
+
+                        <!-- FR pane -->
+                        <div v-show="currentTab === 'fr'" class="relative flex-1">
+                            <textarea
+                                ref="contentInput"
+                                v-model="currentTemplate.content"
+                                @focus="activeField = 'content'"
+                                @input="autoSave"
+                                class="sketch-input w-full h-full p-4 text-xl leading-relaxed rounded-lg resize-none blur-transition"
+                                :class="{ 'filter blur-md select-none pointer-events-none opacity-40': isContentBlurred }"
+                                placeholder="Write the perfect French response here..."
+                            ></textarea>
+
+                            <div v-if="isContentBlurred" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div class="bg-white px-6 py-4 rounded-xl border-2 border-black shadow-[4px_4px_0_0_#222] text-black font-bold text-lg rotate-[-2deg]">
+                                    🙈 HIDDEN FOR PRACTICE
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ZH pane -->
+                        <div v-show="currentTab === 'zh'" class="relative flex-1">
+                            <textarea
+                                ref="translationInput"
+                                v-model="currentTemplate.translation"
+                                @focus="activeField = 'translation'"
+                                @input="autoSave"
+                                class="sketch-input w-full h-full p-4 text-xl leading-relaxed rounded-lg resize-none"
+                                placeholder="中文翻译。可点击 'AI Translate' 按钮自动生成，也可手动编辑。段落用空行分隔。"
+                            ></textarea>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIGHT PANEL: PRACTICE AREA -->
+            <section class="flex-1 flex flex-col sketch-card rounded-xl overflow-hidden min-h-0">
+
+                <!-- Mode bar -->
+                <div class="p-3 bg-gray-50 border-b-2 border-black flex items-center justify-between gap-3 shrink-0 flex-wrap">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold uppercase text-black/60 mr-1">Mode:</span>
+                        <button @click="setPracticeMode('write')"
+                                class="sketch-btn px-3 py-1 text-sm rounded-md font-bold"
+                                :class="{ 'bg-black text-white': practiceMode === 'write' }">
+                            ✍️ Write
+                        </button>
+                        <button @click="setPracticeMode('dictation')"
+                                class="sketch-btn px-3 py-1 text-sm rounded-md font-bold"
+                                :class="{ 'bg-black text-white': practiceMode === 'dictation' }">
+                            🙈 Dictation
+                        </button>
+                        <button @click="setPracticeMode('translate')"
+                                class="sketch-btn px-3 py-1 text-sm rounded-md font-bold"
+                                :class="{ 'bg-black text-white': practiceMode === 'translate' }">
+                            🀄 ZH→FR
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-3 flex-wrap text-sm">
+                        <label class="flex items-center gap-1 cursor-pointer" title="忽略大小写差异">
+                            <input type="checkbox" v-model="ignoreCase" class="accent-black w-4 h-4">
+                            <span>忽略大小写</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer" title="忽略重音差异（默认关闭，建议保持关闭以严格检查）">
+                            <input type="checkbox" v-model="ignoreAccent" class="accent-black w-4 h-4">
+                            <span>忽略重音</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Translate mode chunk bar -->
+                <div v-if="practiceMode === 'translate'" class="p-3 bg-white border-b-2 border-black flex items-center justify-between gap-3 shrink-0 flex-wrap">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold uppercase text-black/60 mr-1">范围:</span>
+                        <button @click="setChunkMode('whole')"
+                                class="sketch-btn px-3 py-1 text-sm rounded-md font-bold"
+                                :class="{ 'bg-black text-white': chunkMode === 'whole' }">
+                            整篇
+                        </button>
+                        <button @click="setChunkMode('chunk')"
+                                class="sketch-btn px-3 py-1 text-sm rounded-md font-bold"
+                                :class="{ 'bg-black text-white': chunkMode === 'chunk' }">
+                            分段
+                        </button>
+                    </div>
+
+                    <div v-if="chunkMode === 'chunk'" class="flex items-center gap-2 text-sm">
+                        <button @click="prevChunk" :disabled="currentChunkIndex <= 0"
+                                class="sketch-btn px-2 py-1 rounded-md font-bold">◀</button>
+                        <span class="font-bold">
+                            段 {{ chunks.length === 0 ? 0 : currentChunkIndex + 1 }} / {{ chunks.length }}
+                        </span>
+                        <button @click="nextChunk" :disabled="currentChunkIndex >= chunks.length - 1"
+                                class="sketch-btn px-2 py-1 rounded-md font-bold">▶</button>
+                    </div>
+
+                    <div v-else class="text-sm text-black/60">整篇翻译模式</div>
+                </div>
+
+                <!-- Translate prompt area (shown above the textarea) -->
+                <div v-if="practiceMode === 'translate'" class="p-3 bg-gray-50 border-b-2 border-black shrink-0 max-h-44 overflow-y-auto">
+                    <div class="text-xs font-bold uppercase text-black/60 mb-1">中文提示 (翻译为法语):</div>
+                    <div class="text-lg whitespace-pre-wrap leading-relaxed">{{ activeTranslationPrompt || '（请先在左侧 ZH 标签页填写或生成中文翻译）' }}</div>
+                </div>
+
+                <!-- Timer Bar -->
+                <div class="p-3 bg-white border-b-2 border-black flex items-center justify-between shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="font-mono text-3xl font-bold tracking-tight text-black flex items-center gap-2" :class="{'animate-pulse': isLowTime}">
+                            <span>{{ formattedTime }}</span>
+                            <span v-if="timerRunning" class="text-xs font-sans border-2 border-black px-1 rounded uppercase">Live</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <template v-if="!timerRunning">
+                            <button @click="startTimer(10)" class="sketch-btn px-3 py-1 text-base font-bold rounded-lg">10m</button>
+                            <button @click="startTimer(20)" class="sketch-btn px-3 py-1 text-base font-bold rounded-lg">20m</button>
+                            <button @click="startTimer(30)" class="sketch-btn px-3 py-1 text-base font-bold rounded-lg">30m</button>
+                        </template>
+                        <button v-else @click="stopTimer" class="sketch-btn px-3 py-1 text-base font-bold rounded-lg flex items-center gap-2 bg-black text-white hover:bg-white hover:text-black">
+                            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12"></rect></svg>
+                            STOP
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main Interaction Area -->
+                <div class="flex-1 p-4 flex flex-col min-h-0 overflow-hidden relative bg-white">
+
+                    <!-- Stats Overlay -->
+                    <div class="flex justify-between text-xs font-bold text-gray-500 mb-2 px-1" v-if="!showResult">
+                        <span class="bg-gray-100 px-2 py-1 rounded border border-gray-300">Words: {{ wordCount }}</span>
+                        <span class="bg-gray-100 px-2 py-1 rounded border border-gray-300">Chars: {{ charCount }}</span>
+                    </div>
+
+                    <!-- Mistake Notes -->
+                    <div v-if="!showResult" class="mb-3 border-2 border-black rounded-lg bg-yellow-50 shadow-[3px_3px_0_0_#222] shrink-0 overflow-hidden">
+                        <div class="px-3 py-2 flex items-center justify-between gap-2 bg-yellow-100/80 border-b-2 border-black">
+                            <button @click="notesCollapsed = !notesCollapsed" class="flex items-center gap-2 min-w-0 text-left font-bold text-sm">
+                                <span>{{ notesCollapsed ? '▶' : '▼' }}</span>
+                                <span class="shrink-0">错题笔记</span>
+                                <span class="truncate text-black/55 font-normal text-xs">
+                                    {{ currentTemplate.notes ? currentTemplate.notes.split('\n')[0] : '记录常错拼写、语法、表达；下次写作前打开提醒' }}
+                                </span>
+                            </button>
+                            <button @click="exportCurrentNotes" class="sketch-btn px-2 py-1 text-xs rounded-md font-bold shrink-0" title="Export notes for this template">Export</button>
+                        </div>
+                        <textarea
+                            v-show="!notesCollapsed"
+                            ref="notesInput"
+                            v-model="currentTemplate.notes"
+                            @focus="activeField = 'notes'"
+                            @input="autoSave"
+                            class="w-full h-24 p-3 text-base leading-snug resize-none bg-yellow-50 outline-none"
+                            placeholder="例：anniversaire 拼写；à + lieu；nous allons + infinitif；阴阳性/冠词..."
+                            spellcheck="false"
+                        ></textarea>
+                    </div>
+
+                    <!-- Mode: Typing -->
+                    <div v-show="!showResult" class="flex-1 flex flex-col relative h-full">
+                        <textarea
+                            ref="practiceInput"
+                            v-model="activePracticeText"
+                            @focus="activeField = 'practice'"
+                            class="sketch-input flex-1 w-full p-5 rounded-xl text-xl leading-relaxed resize-none"
+                            :placeholder="practicePlaceholder"
+                            spellcheck="false"
+                        ></textarea>
+                    </div>
+
+                    <!-- Mode: Results (Diff) -->
+                    <div v-if="showResult" class="flex-1 bg-white border-2 border-black rounded-xl overflow-y-auto p-6 relative shadow-inner">
+                         <div class="sticky top-0 bg-white/95 backdrop-blur-sm pb-4 border-b-2 border-black mb-6 z-10 flex items-start justify-between gap-3 flex-wrap">
+                            <h2 class="text-2xl font-bold text-black flex items-center gap-2">
+                                <span class="text-3xl">📝</span> Assessment Result
+                            </h2>
+                            <div class="flex flex-col sm:flex-row gap-3 text-sm">
+                                <div class="flex items-center gap-2 bg-white border border-black px-2 py-1 rounded shadow-[2px_2px_0_0_#000]">
+                                    <span class="font-bold border-b-2 border-black">Extra Text</span>
+                                    <span class="text-gray-600">= You added</span>
+                                </div>
+                                <div class="flex items-center gap-2 bg-white border border-black px-2 py-1 rounded shadow-[2px_2px_0_0_#000]">
+                                    <span class="line-through opacity-60 italic font-bold">Missing</span>
+                                    <span class="text-gray-600">= You forgot</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Accuracy Stats -->
+                        <div v-if="accuracyStats" class="mb-5 p-4 bg-gray-50 border-2 border-black rounded-xl flex flex-wrap items-center gap-4 text-base">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs uppercase font-bold text-black/60">准确率</span>
+                                <span class="text-3xl font-bold">{{ accuracyStats.accuracy }}%</span>
+                            </div>
+                            <div class="text-sm text-gray-700">
+                                正确 {{ accuracyStats.correct }} / {{ accuracyStats.total }} 词
+                                <span class="mx-1">·</span>
+                                多 +{{ accuracyStats.added }}
+                                <span class="mx-1">·</span>
+                                漏 -{{ accuracyStats.removed }}
+                            </div>
+                            <div v-if="accuracyStats.elapsed" class="text-sm text-gray-700">
+                                ⏱ 用时 {{ accuracyStats.elapsed }}
+                            </div>
+                            <div class="text-xs text-gray-500 ml-auto">{{ accuracyStats.options }}</div>
+                        </div>
+
+                        <!-- The Diff Content -->
+                        <div class="text-xl leading-loose whitespace-pre-wrap">
+                            <template v-for="(part, index) in diffResult" :key="index">
+                                <span
+                                    v-if="part.added"
+                                    class="font-bold border-b-4 border-black mx-0.5"
+                                    title="Extra text"
+                                >{{ partText(part) }}</span>
+
+                                <span
+                                    v-else-if="part.removed"
+                                    class="line-through opacity-50 italic mx-0.5 font-semibold"
+                                    title="Missing text"
+                                >{{ partText(part) }}</span>
+
+                                <span v-else>{{ partText(part) }}</span>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <div class="mt-5 pt-2">
+                        <button
+                            v-if="!showResult"
+                            @click="submitCheck"
+                            class="sketch-btn w-full py-4 text-xl font-bold rounded-xl flex items-center justify-center gap-3 bg-black text-white hover:bg-white hover:text-black"
+                        >
+                            <span>Submit & Check</span>
+                            <span class="font-normal text-base border border-current px-2 rounded">核对</span>
+                        </button>
+
+                        <button
+                            v-else
+                            @click="backToEditing"
+                            class="sketch-btn w-full py-4 text-xl font-bold rounded-xl flex items-center justify-center gap-2"
+                        >
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                            Back to Editing
+                        </button>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // ============================================================
+        // Gemini API key is stored in localStorage (key: tcf_gemini_api_key).
+        // First time you click "AI Translate" you'll be prompted to enter one.
+        // You can change it any time via the "🔑 Key" button in the left toolbar.
+        // The key never leaves your browser; it is only sent to Google's API.
+        // ============================================================
+        const GEMINI_MODEL = 'gemini-2.5-flash';
+
+        const STORAGE_KEY = 'tcf-writing-share-v1-templates';
+        const API_KEY_STORAGE = 'tcf-writing-share-v1-gemini-key';
+
+        const { createApp } = Vue;
+
+        // ----- Helpers -----
+        function splitChunks(s) {
+            if (!s) return [];
+            return s.split(/\n\s*\n/).map(x => x.trim()).filter(x => x.length > 0);
+        }
+
+        function tokenize(s) {
+            // Split into alternating word + whitespace tokens, preserving order
+            if (!s) return [];
+            return s.split(/(\s+)/).filter(t => t.length > 0);
+        }
+
+        function isWordToken(t) {
+            return t && !/^\s+$/.test(t);
+        }
+
+        function normalizeForCompare(s, ignoreCase, ignoreAccent) {
+            let t = s;
+            if (ignoreAccent) t = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            if (ignoreCase) t = t.toLowerCase();
+            return t;
+        }
+
+        createApp({
+            data() {
+                return {
+                    // Keyboard
+                    isUppercase: false,
+                    lowerChars: ['à', 'â', 'æ', 'ç', 'é', 'è', 'ê', 'ë', 'ï', 'î', 'ô', 'œ', 'ù', 'û', 'ü', 'ÿ', '€'],
+                    upperChars: ['À', 'Â', 'Æ', 'Ç', 'É', 'È', 'Ê', 'Ë', 'Ï', 'Î', 'Ô', 'Œ', 'Ù', 'Û', 'Ü', 'Ÿ', '€'],
+
+                    // App data
+                    templates: [],
+                    currentTemplateId: null,
+                    currentTemplateCategory: 'task1',
+                    templateSearch: '',
+                    templateCategories: [
+                        { id: 'task1', label: 'Tâche 1' },
+                        { id: 'task2', label: 'Tâche 2' },
+                        { id: 'task3', label: 'Tâche 3' },
+                        { id: 'freetalk', label: 'Free talk' }
+                    ],
+                    practiceContent: '',
+                    chunkPracticeContents: {}, // key: `${templateId}::${chunkIndex}` -> string
+                    activeField: null, // 'topic' | 'content' | 'translation' | 'notes' | 'practice'
+
+                    // Tabs in left panel
+                    currentTab: 'fr', // 'fr' | 'zh'
+
+                    // Practice modes (right panel)
+                    practiceMode: 'write', // 'write' | 'dictation' | 'translate'
+                    chunkMode: 'whole', // 'whole' | 'chunk' (only for translate)
+                    currentChunkIndex: 0,
+
+                    // Comparison options
+                    ignoreCase: true,    // default ON (per user)
+                    ignoreAccent: false, // default OFF (per user, accents matter)
+
+                    // UI state
+                    hideTemplate: false,
+                    isPeeking: false,
+                    showResult: false,
+                    diffResult: [],
+                    accuracyStats: null,
+                    practiceStartTime: null,
+                    notesCollapsed: true,
+
+                    // AI translation state
+                    aiTranslating: false,
+                    aiError: '',
+                    geminiApiKey: '',
+
+                    // Timer
+                    timerTime: 0,
+                    timerRunning: false,
+                    timerInterval: null
+                }
+            },
+            computed: {
+                templateCategoryCounts() {
+                    const counts = { task1: 0, task2: 0, task3: 0, freetalk: 0 };
+                    this.templates.forEach(t => {
+                        const cat = this.templateCategory(t);
+                        counts[cat] = (counts[cat] || 0) + 1;
+                    });
+                    return counts;
+                },
+                filteredTemplates() {
+                    const q = (this.templateSearch || '').trim().toLowerCase();
+                    return this.templates.filter(t => {
+                        if (this.templateCategory(t) !== this.currentTemplateCategory) return false;
+                        if (!q) return true;
+                        const text = `${t.name || ''} ${t.topic || ''} ${t.content || ''} ${t.translation || ''} ${t.notes || ''}`.toLowerCase();
+                        return text.includes(q);
+                    });
+                },                currentChars() {
+                    return this.isUppercase ? this.upperChars : this.lowerChars;
+                },
+                currentTemplate() {
+                    return this.templates.find(t => t.id === this.currentTemplateId) || {};
+                },
+                isContentBlurred() {
+                    // Auto-blur in dictation mode regardless of toggle
+                    if (this.practiceMode === 'dictation' && !this.isPeeking) return true;
+                    return this.hideTemplate && !this.isPeeking;
+                },
+                formattedTime() {
+                    const m = Math.floor(this.timerTime / 60);
+                    const s = this.timerTime % 60;
+                    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                },
+                isLowTime() {
+                    return this.timerRunning && this.timerTime < 60;
+                },
+                wordCount() {
+                    const t = this.activePracticeText || '';
+                    if (!t) return 0;
+                    const matches = t.trim().match(/\S+/g);
+                    return matches ? matches.length : 0;
+                },
+                charCount() {
+                    return (this.activePracticeText || '').length;
+                },
+                chunks() {
+                    // Translate mode uses ZH translation chunks
+                    return splitChunks(this.currentTemplate.translation || '');
+                },
+                chunksFr() {
+                    return splitChunks(this.currentTemplate.content || '');
+                },
+                activeTranslationPrompt() {
+                    if (this.practiceMode !== 'translate') return '';
+                    if (this.chunkMode === 'whole') {
+                        return this.currentTemplate.translation || '';
+                    }
+                    if (this.chunks.length === 0) return '';
+                    return this.chunks[this.currentChunkIndex] || '';
+                },
+                referenceText() {
+                    // What we compare practice against
+                    if (this.practiceMode === 'translate') {
+                        if (this.chunkMode === 'whole') {
+                            return this.currentTemplate.content || '';
+                        }
+                        // chunk mode: use chunked FR if chunk count matches; otherwise fall back to whole FR
+                        if (this.chunksFr.length === this.chunks.length && this.chunksFr.length > 0) {
+                            return this.chunksFr[this.currentChunkIndex] || '';
+                        }
+                        // Mismatch — warn via empty string (handled in submit)
+                        return this.chunksFr[this.currentChunkIndex] || '';
+                    }
+                    // write / dictation: full FR template
+                    return this.currentTemplate.content || '';
+                },
+                practicePlaceholder() {
+                    if (this.practiceMode === 'translate') {
+                        return this.chunkMode === 'chunk'
+                            ? '将左上方的中文段落翻译成法语…'
+                            : '将左上方完整的中文翻译成法语…';
+                    }
+                    if (this.practiceMode === 'dictation') {
+                        return '默写法语原文（左侧已自动隐藏）…';
+                    }
+                    return '在此输入你记忆中的法语原文…';
+                },
+                activePracticeText: {
+                    get() {
+                        if (this.practiceMode === 'translate' && this.chunkMode === 'chunk') {
+                            const k = `${this.currentTemplateId}::${this.currentChunkIndex}`;
+                            return this.chunkPracticeContents[k] || '';
+                        }
+                        return this.practiceContent;
+                    },
+                    set(v) {
+                        if (this.practiceMode === 'translate' && this.chunkMode === 'chunk') {
+                            const k = `${this.currentTemplateId}::${this.currentChunkIndex}`;
+                            // Vue 3 reactivity: assigning a new property is fine on a reactive object
+                            this.chunkPracticeContents[k] = v;
+                        } else {
+                            this.practiceContent = v;
+                        }
+                        if (!this.practiceStartTime && v && v.length > 0) {
+                            this.practiceStartTime = Date.now();
+                        }
+                    }
+                }
+            },
+            watch: {
+                // Reset chunk index when chunk count changes / template changes
+                currentTemplateId() {
+                    this.currentChunkIndex = 0;
+                    this.showResult = false;
+                    this.accuracyStats = null;
+                }
+            },
+            created() {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    try {
+                        this.templates = JSON.parse(saved);
+                        // Ensure translation field exists
+                        this.templates.forEach(t => {
+                            if (typeof t.translation !== 'string') t.translation = '';
+                            if (typeof t.notes !== 'string') t.notes = '';
+                        });
+                    } catch (e) {
+                        console.error('Error parsing saved templates', e);
+                    }
+                }
+
+                if (this.templates.length === 0) {
+                    this.templates.push({
+                        id: 'default-1',
+                        name: 'Task1_新题目 1',
+                        topic: '',
+                        content: '',
+                        translation: '',
+                        notes: ''
+                    });
+                    this.saveTemplates();
+                }
+
+                this.currentTemplateId = this.templates[0].id;
+                this.currentTemplateCategory = this.templateCategory(this.templates[0]);
+
+                // Load saved Gemini API key
+                this.geminiApiKey = localStorage.getItem(API_KEY_STORAGE) || '';
+            },
+            methods: {
+                // ----- Template navigation -----
+                templateCategory(t) {
+                    const raw = (t && t.name ? t.name : '').toLowerCase();
+                    const name = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+                    if (/free\s*talk|freetalk|自由|随笔/.test(name)) return 'freetalk';
+                    if (/(task|tache)\s*[_:\- ]?1|task1|tache1/.test(name)) return 'task1';
+                    if (/(task|tache)\s*[_:\- ]?2|task2|tache2/.test(name)) return 'task2';
+                    if (/(task|tache)\s*[_:\- ]?3|task3|tache3/.test(name)) return 'task3';
+                    return 'freetalk';
+                },
+                setTemplateCategory(category) {
+                    this.currentTemplateCategory = category;
+                    this.templateSearch = '';
+                    const current = this.templates.find(t => t.id === this.currentTemplateId);
+                    if (!current || this.templateCategory(current) !== category) {
+                        const first = this.filteredTemplates[0];
+                        if (first) {
+                            this.currentTemplateId = first.id;
+                            this.changeTemplate();
+                        }
+                    }
+                },
+                categoryNamePrefix() {
+                    if (this.currentTemplateCategory === 'task1') return 'Task1_新题目';
+                    if (this.currentTemplateCategory === 'task2') return 'Task2_新题目';
+                    if (this.currentTemplateCategory === 'task3') return 'Task3_新题目';
+                    return 'Free talk_新想法';
+                },                // ----- Keyboard -----
+                toggleCaps() { this.isUppercase = !this.isUppercase; },
+                insertChar(char) {
+                    let inputRef = null;
+                    let modelField = null;
+                    let parentObj = null;
+
+                    if (this.activeField === 'topic') {
+                        inputRef = this.$refs.topicInput;
+                        parentObj = this.currentTemplate;
+                        modelField = 'topic';
+                    } else if (this.activeField === 'content') {
+                        inputRef = this.$refs.contentInput;
+                        parentObj = this.currentTemplate;
+                        modelField = 'content';
+                    } else if (this.activeField === 'translation') {
+                        inputRef = this.$refs.translationInput;
+                        parentObj = this.currentTemplate;
+                        modelField = 'translation';
+                    } else if (this.activeField === 'notes') {
+                        inputRef = this.$refs.notesInput;
+                        parentObj = this.currentTemplate;
+                        modelField = 'notes';
+                    } else if (this.activeField === 'practice') {
+                        inputRef = this.$refs.practiceInput;
+                        modelField = '__practice__';
+                    }
+
+                    if (inputRef) {
+                        const start = inputRef.selectionStart;
+                        const end = inputRef.selectionEnd;
+                        const text = inputRef.value;
+                        const before = text.substring(0, start);
+                        const after = text.substring(end);
+                        const newVal = before + char + after;
+
+                        if (modelField === '__practice__') {
+                            this.activePracticeText = newVal;
+                        } else if (parentObj) {
+                            parentObj[modelField] = newVal;
+                        }
+
+                        this.$nextTick(() => {
+                            inputRef.focus();
+                            inputRef.selectionStart = inputRef.selectionEnd = start + char.length;
+                        });
+
+                        this.saveTemplates();
+                    }
+                },
+
+                // ----- Templates -----
+                changeTemplate() {
+                    this.practiceContent = '';
+                    this.showResult = false;
+                    this.accuracyStats = null;
+                    this.stopTimer();
+                    this.hideTemplate = false;
+                    this.currentChunkIndex = 0;
+                    this.practiceStartTime = null;
+                },
+                newTemplate() {
+                    const newT = {
+                        id: Date.now().toString(),
+                        name: this.categoryNamePrefix() + ' ' + (this.templateCategoryCounts[this.currentTemplateCategory] + 1),
+                        topic: '',
+                        content: '',
+                        translation: '',
+                        notes: ''
+                    };
+                    this.templates.push(newT);
+                    this.currentTemplateId = newT.id;
+                    this.changeTemplate();
+                    this.saveTemplates();
+                },
+                deleteTemplate() {
+                    if (confirm('Are you sure you want to delete this template?')) {
+                        if (this.templates.length > 1) {
+                            const idx = this.templates.findIndex(t => t.id === this.currentTemplateId);
+                            this.templates.splice(idx, 1);
+                            const firstInCategory = this.filteredTemplates[0] || this.templates[0];
+                            this.currentTemplateId = firstInCategory.id;
+                            this.currentTemplateCategory = this.templateCategory(firstInCategory);
+                            this.changeTemplate();
+                            this.saveTemplates();
+                        } else {
+                            alert("You cannot delete the last template.");
+                        }
+                    }
+                },
+                saveTemplates() {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.templates));
+                },
+                autoSave() { this.saveTemplates(); },
+                toggleBlur() { this.hideTemplate = !this.hideTemplate; },
+
+                // ----- Practice mode -----
+                setPracticeMode(mode) {
+                    this.practiceMode = mode;
+                    this.showResult = false;
+                    this.accuracyStats = null;
+                    this.practiceStartTime = null;
+                    if (mode === 'translate') {
+                        this.currentTab = 'zh';
+                    } else {
+                        this.currentTab = 'fr';
+                    }
+                },
+                setChunkMode(m) {
+                    this.chunkMode = m;
+                    this.showResult = false;
+                    this.accuracyStats = null;
+                    this.practiceStartTime = null;
+                    if (m === 'chunk') this.currentChunkIndex = 0;
+                },
+                prevChunk() {
+                    if (this.currentChunkIndex > 0) {
+                        this.currentChunkIndex--;
+                        this.showResult = false;
+                        this.accuracyStats = null;
+                        this.practiceStartTime = null;
+                    }
+                },
+                nextChunk() {
+                    if (this.currentChunkIndex < this.chunks.length - 1) {
+                        this.currentChunkIndex++;
+                        this.showResult = false;
+                        this.accuracyStats = null;
+                        this.practiceStartTime = null;
+                    }
+                },
+
+                // ----- Timer -----
+                startTimer(minutes) {
+                    this.stopTimer();
+                    this.timerTime = minutes * 60;
+                    this.timerRunning = true;
+                    this.showResult = false;
+                    this.accuracyStats = null;
+                    this.practiceStartTime = Date.now();
+
+                    this.timerInterval = setInterval(() => {
+                        if (this.timerTime > 0) {
+                            this.timerTime--;
+                        } else {
+                            this.stopTimer();
+                            alert("Time is up!");
+                        }
+                    }, 1000);
+                },
+                stopTimer() {
+                    this.timerRunning = false;
+                    if (this.timerInterval) {
+                        clearInterval(this.timerInterval);
+                        this.timerInterval = null;
+                    }
+                },
+
+                // ----- Diff & accuracy -----
+                partText(part) { return part.value.join(''); },
+                computeDiff(elapsedStr) {
+                    const ref = this.referenceText || '';
+                    const user = this.activePracticeText || '';
+
+                    if (this.practiceMode === 'translate' && this.chunkMode === 'chunk'
+                        && this.chunksFr.length !== this.chunks.length) {
+                        this.diffResult = [];
+                        this.accuracyStats = null;
+                        alert(`无法对比：法语原文有 ${this.chunksFr.length} 段，中文翻译有 ${this.chunks.length} 段，段数不一致。\n请确保两边段数相同（用空行分隔段落）。`);
+                        return;
+                    }
+
+                    const refTokens = tokenize(ref);
+                    const userTokens = tokenize(user);
+
+                    const ignoreCase = this.ignoreCase;
+                    const ignoreAccent = this.ignoreAccent;
+
+                    const diff = Diff.diffArrays(refTokens, userTokens, {
+                        comparator: (a, b) =>
+                            normalizeForCompare(a, ignoreCase, ignoreAccent)
+                            === normalizeForCompare(b, ignoreCase, ignoreAccent)
+                    });
+
+                    this.diffResult = diff;
+
+                    // Accuracy: count word tokens
+                    let correct = 0, added = 0, removed = 0, refWords = 0;
+                    diff.forEach(p => {
+                        p.value.forEach(tok => {
+                            if (!isWordToken(tok)) return;
+                            if (p.added) added++;
+                            else if (p.removed) { removed++; refWords++; }
+                            else { correct++; refWords++; }
+                        });
+                    });
+                    const total = refWords;
+                    const accuracy = total === 0 ? 0 : Math.round((correct / total) * 100);
+                    const optStr = `选项: ${ignoreCase ? '忽略大小写' : '严格大小写'} · ${ignoreAccent ? '忽略重音' : '严格重音'}`;
+                    const elapsed = elapsedStr !== undefined
+                        ? elapsedStr
+                        : (this.accuracyStats ? this.accuracyStats.elapsed : null);
+
+                    this.accuracyStats = { accuracy, correct, total, added, removed, elapsed, options: optStr };
+                },
+
+                submitCheck() {
+                    let elapsedStr = null;
+                    if (this.practiceStartTime) {
+                        const seconds = Math.floor((Date.now() - this.practiceStartTime) / 1000);
+                        const m = Math.floor(seconds / 60);
+                        const s = seconds % 60;
+                        elapsedStr = `${m}:${s.toString().padStart(2, '0')}`;
+                    }
+                    this.stopTimer();
+                    this.computeDiff(elapsedStr);
+                    this.showResult = true;
+                    this.practiceStartTime = null;
+                },
+
+                backToEditing() {
+                    this.showResult = false;
+                    this.accuracyStats = null;
+                },
+
+                // ----- API Key management -----
+                setApiKey() {
+                    const current = this.geminiApiKey || '';
+                    const masked = current
+                        ? current.slice(0, 6) + '...' + current.slice(-4)
+                        : '(未设置)';
+                    const input = window.prompt(
+                        `请输入 Gemini API Key（留空则清除）。\n当前: ${masked}`,
+                        current
+                    );
+                    if (input === null) return; // user cancelled
+                    const trimmed = input.trim();
+                    this.geminiApiKey = trimmed;
+                    if (trimmed) {
+                        localStorage.setItem(API_KEY_STORAGE, trimmed);
+                        this.aiError = '';
+                    } else {
+                        localStorage.removeItem(API_KEY_STORAGE);
+                    }
+                },
+
+                // ----- AI Translate (Gemini) -----
+                async aiTranslate() {
+                    const fr = this.currentTemplate.content;
+                    if (!fr || !fr.trim()) {
+                        this.aiError = '法语原文为空。请先在 Modèle (FR) 标签页填入法语内容。';
+                        return;
+                    }
+                    if (!this.geminiApiKey) {
+                        this.setApiKey();
+                        if (!this.geminiApiKey) {
+                            this.aiError = '尚未设置 Gemini API Key。点击左上角 🔑 Key 按钮可重新设置。';
+                            return;
+                        }
+                    }
+                    if (this.currentTemplate.translation && this.currentTemplate.translation.trim()) {
+                        if (!confirm('当前已有中文翻译，是否覆盖？')) return;
+                    }
+                    this.aiTranslating = true;
+                    this.aiError = '';
+
+                    try {
+                        const prompt =
+`请将下面的法语文本自然地翻译成中文。
+
+严格要求：
+1. 保留原文段落结构：原文中用空行分隔的段落，译文也必须用空行分隔，且段落数量必须完全一致。
+2. 翻译风格要贴合原文：原文是正式书面语就用书面中文，是口语/邮件/对话就用相应口语化中文，不要风格统一化。
+3. 只输出译文本身，不要任何解释、标题、前后说明、引号或代码块包裹。
+
+原文：
+${fr}`;
+
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${this.geminiApiKey}`;
+                        const body = {
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: {
+                                temperature: 0.3,
+                                thinkingConfig: { thinkingBudget: 0 }
+                            }
+                        };
+
+                        const resp = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body)
+                        });
+
+                        if (!resp.ok) {
+                            const text = await resp.text();
+                            throw new Error(`HTTP ${resp.status}: ${text.slice(0, 200)}`);
+                        }
+
+                        const data = await resp.json();
+                        const out = data && data.candidates && data.candidates[0]
+                            && data.candidates[0].content && data.candidates[0].content.parts
+                            && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+                        if (!out) throw new Error('Gemini 返回为空，可能被安全过滤拦截。');
+
+                        this.currentTemplate.translation = out.trim();
+                        this.currentTab = 'zh';
+                        this.saveTemplates();
+                    } catch (e) {
+                        console.error('AI translate error:', e);
+                        this.aiError = e.message || String(e);
+                    } finally {
+                        this.aiTranslating = false;
+                    }
+                },
+
+                // ----- Import / Export -----
+                exportTemplates() {
+                    const data = JSON.stringify(this.templates, null, 2);
+                    const blob = new Blob([data], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    const today = new Date().toISOString().slice(0, 10);
+                    a.href = url;
+                    a.download = `tcf_templates_${today}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                },
+
+                exportCurrentNotes() {
+                    const t = this.currentTemplate || {};
+                    const today = new Date().toISOString().slice(0, 10);
+                    const title = t.name || 'TCF template';
+                    const lines = [
+                        `TCF Writing Mistake Notes`,
+                        `Template: ${title}`,
+                        `Date: ${today}`,
+                        '',
+                        t.notes || ''
+                    ];
+                    const safeName = title.replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60) || 'template';
+                    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `tcf_notes_${safeName}_${today}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                },
+
+                escapeHtml(value) {
+                    return String(value || '').replace(/[&<>"']/g, ch => ({
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        '"': '&quot;',
+                        "'": '&#39;'
+                    }[ch]));
+                },
+
+                formatPdfText(value) {
+                    return this.escapeHtml(value).replace(/\r\n|\r|\n/g, '<br>');
+                },
+
+                exportPdfReader() {
+                    this.saveTemplates();
+                    const today = new Date().toISOString().slice(0, 10);
+                    const templates = (this.templates || []).filter(t =>
+                        (t.name || t.topic || t.content || t.translation || '').trim()
+                    );
+
+                    if (templates.length === 0) {
+                        alert('No templates to export.');
+                        return;
+                    }
+
+                    const toc = templates.map((t, index) => {
+                        const title = this.escapeHtml(t.name || `Template ${index + 1}`);
+                        const topic = this.escapeHtml(t.topic || '');
+                        return `
+                            <a class="toc-item" href="#essay-${index + 1}">
+                                <span class="toc-number">${index + 1}</span>
+                                <span>
+                                    <strong>${title}</strong>
+                                    ${topic ? `<small>${topic}</small>` : ''}
+                                </span>
+                            </a>
+                        `;
+                    }).join('');
+
+                    const essays = templates.map((t, index) => {
+                        const title = this.escapeHtml(t.name || `Template ${index + 1}`);
+                        const topic = this.formatPdfText(t.topic || '');
+                        const content = this.formatPdfText(t.content || '');
+                        const translation = this.formatPdfText(t.translation || '');
+                        const notes = this.formatPdfText(t.notes || '');
+                        return `
+                            <article class="essay" id="essay-${index + 1}">
+                                <a class="back-link" href="#toc">Back to contents</a>
+                                <h2>${index + 1}. ${title}</h2>
+                                ${topic ? `<section><h3>Sujet / Topic</h3><p>${topic}</p></section>` : ''}
+                                ${content ? `<section><h3>Modele FR</h3><p class="fr">${content}</p></section>` : ''}
+                                ${translation ? `<section><h3>Traduction ZH</h3><p>${translation}</p></section>` : ''}
+                                ${notes ? `<section><h3>Notes d'erreurs</h3><p>${notes}</p></section>` : ''}
+                            </article>
+                        `;
+                    }).join('');
+
+                    const html = `<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>TCF Writing Templates ${today}</title>
+<style>
+    @page { size: A4; margin: 16mm 14mm; }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        color: #17202a;
+        background: #fff;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+        font-size: 14px;
+        line-height: 1.65;
+    }
+    .cover {
+        min-height: 94vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        border-bottom: 2px solid #17202a;
+    }
+    h1 { margin: 0 0 10px; font-size: 34px; line-height: 1.15; }
+    .meta { margin: 0; color: #5d6d7e; font-size: 13px; }
+    #toc { break-after: page; page-break-after: always; padding-top: 10mm; }
+    #toc h2, .essay h2 { margin: 0 0 16px; font-size: 24px; line-height: 1.25; }
+    .toc-list { display: grid; gap: 8px; }
+    .toc-item {
+        display: grid;
+        grid-template-columns: 30px 1fr;
+        gap: 10px;
+        padding: 9px 0;
+        color: #17202a;
+        text-decoration: none;
+        border-bottom: 1px solid #d6dbdf;
+    }
+    .toc-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border: 1px solid #17202a;
+        border-radius: 50%;
+        font-size: 12px;
+        font-weight: 700;
+    }
+    .toc-item small {
+        display: block;
+        margin-top: 2px;
+        color: #5d6d7e;
+        line-height: 1.45;
+    }
+    .essay {
+        break-before: page;
+        page-break-before: always;
+        padding-top: 4mm;
+    }
+    .back-link {
+        float: right;
+        color: #2874a6;
+        font-size: 12px;
+        text-decoration: none;
+    }
+    h3 {
+        margin: 18px 0 6px;
+        font-size: 14px;
+        letter-spacing: 0;
+        text-transform: uppercase;
+        color: #5d6d7e;
+        border-bottom: 1px solid #d6dbdf;
+    }
+    p { margin: 0 0 10px; }
+    .fr { font-size: 15px; }
+    @media print {
+        a { color: inherit; }
+        .back-link { display: none; }
+    }
+</style>
+</head>
+<body onload="setTimeout(function(){ window.print(); }, 300)">
+    <section class="cover">
+        <h1>TCF Writing Templates</h1>
+        <p class="meta">${templates.length} templates · Generated ${today}</p>
+    </section>
+    <nav id="toc">
+        <h2>Contents</h2>
+        <div class="toc-list">${toc}</div>
+    </nav>
+    ${essays}
+</body>
+</html>`;
+
+                    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const win = window.open(url, '_blank');
+                    if (!win) {
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `tcf_writing_pdf_reader_${today}.html`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        alert('Popup was blocked. A printable HTML file has been downloaded instead.');
+                    }
+                    setTimeout(() => URL.revokeObjectURL(url), 60000);
+                },
+
+                triggerImport() {
+                    if (this.$refs.importFile) this.$refs.importFile.value = '';
+                    this.$refs.importFile.click();
+                },
+
+                async onImportFile(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    try {
+                        const text = await file.text();
+                        const arr = JSON.parse(text);
+                        if (!Array.isArray(arr)) throw new Error('JSON 不是数组格式');
+
+                        let added = 0, overwritten = 0, skipped = 0;
+                        for (const incoming of arr) {
+                            if (!incoming || !incoming.id) continue;
+                            const norm = {
+                                id: String(incoming.id),
+                                name: incoming.name || 'Imported',
+                                topic: incoming.topic || '',
+                                content: incoming.content || '',
+                                translation: incoming.translation || '',
+                                notes: incoming.notes || ''
+                            };
+                            const existIdx = this.templates.findIndex(t => t.id === norm.id);
+                            if (existIdx >= 0) {
+                                const existName = this.templates[existIdx].name;
+                                const choice = confirm(
+                                    `模板 "${existName}" (id: ${norm.id}) 已存在。\n\n` +
+                                    `导入的模板名："${norm.name}"\n\n` +
+                                    `点 [确定] = 覆盖\n` +
+                                    `点 [取消] = 跳过`
+                                );
+                                if (choice) {
+                                    this.templates.splice(existIdx, 1, norm);
+                                    overwritten++;
+                                } else {
+                                    skipped++;
+                                }
+                            } else {
+                                this.templates.push(norm);
+                                added++;
+                            }
+                        }
+
+                        if (!this.templates.find(t => t.id === this.currentTemplateId)) {
+                            this.currentTemplateId = this.templates[0] ? this.templates[0].id : null;
+                            this.changeTemplate();
+                        }
+
+                        this.saveTemplates();
+                        alert(`导入完成：\n新增 ${added}\n覆盖 ${overwritten}\n跳过 ${skipped}`);
+                    } catch (err) {
+                        console.error(err);
+                        alert(`导入失败：${err.message}`);
+                    } finally {
+                        if (this.$refs.importFile) this.$refs.importFile.value = '';
+                    }
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
+
+
+
